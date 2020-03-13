@@ -1,4 +1,4 @@
-from .mineRSA import RSASignature
+from mineRSA import RSASignature
 from Crypto.PublicKey import RSA
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QApplication
