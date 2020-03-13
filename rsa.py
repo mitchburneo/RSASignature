@@ -1,10 +1,12 @@
-from mineRSA import RSASignature
 from Crypto.PublicKey import RSA
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QApplication
 from main_window import Ui_MainWindow
 from binascii import Error as PaddingError
 from sys import argv as sys_argv, exit as sys_exit
+from mineRSA import RSASignature
+from yadisk import YaDisk
+from os import remove
 
 
 class Application(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -12,18 +14,21 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.signature = RSASignature()
+        self.public_key_path = "/public.key"
         self.btn_create_from_file.clicked.connect(self.select_file_to_create)
         self.btn_create_from_text.clicked.connect(self.create_from_text)
         self.btn_verify_from_file.clicked.connect(self.select_file_to_verify)
         self.btn_verify_from_text.clicked.connect(self.verify_from_text)
-        self.btn_import_sign.clicked.connect(self.import_sign_from_file)
+        self.btn_import_signature.clicked.connect(self.import_signature_from_file)
+        self.btn_export_signature.clicked.connect(self.export_signature_as_file)
         self.btn_copy_signature.clicked.connect(self.copy_signature)
         self.btn_paste_sign.clicked.connect(self.paste_signature)
-        self.btn_export_signature.clicked.connect(self.save_file)
 
+    # GET SIGNATURE FROM CLIPBOARD AND PASTE TO @signature_input FIELD
     def paste_signature(self):
         self.signature_input.setText(QApplication.clipboard().text())
 
+    # COPY SIGNATURE TO CLIPBOARD from @signature_output
     def copy_signature(self):
         if not self.signature_output.text():
             return
@@ -36,7 +41,9 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
         msg.setWindowTitle("Done")
         msg.exec_()
 
+    # VERIFIES SIGNATURE OF DATA FROM @text_input_verify FIELD
     def verify_from_text(self):
+        YaDisk(token="AgAAAAA-K6RDAAY3RDjBjbLhyEzNrtjUFsV0D2k").download(self.public_key_path, "public.key")
         public_key = RSA.importKey(open("public.key", 'r').read())
         try:
             if self.signature.rsa_verify(public_key,
@@ -59,11 +66,15 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
             msg.setText("Signature is not padded")
             msg.setWindowTitle("Error")
             msg.exec_()
+        finally:
+            remove("public.key")
 
+    # CREATES SIGNATURE OF DATA FROM @text_input_verify FIELD
     def create_from_text(self):
         sign = self.signature.rsa_sign(self.text_input_create.toPlainText()).decode()
         self.signature_output.setText(sign)
 
+    # CREATES SIGNATURE OF DATA FROM SELECTED FILE
     def select_file_to_create(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "")[0]
         if file_name:
@@ -73,11 +84,13 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
             self.signature_output.setText(sign)
             input_file.close()
 
+    # VERIFIES SIGNATURE OF DATA FROM SELECTED FILE
     def select_file_to_verify(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "")[0]
         if file_name:
             self.text_input_verify.clear()
             input_file = open(file_name, "r", encoding='utf-8')
+            YaDisk(token="AgAAAAA-K6RDAAY3RDjBjbLhyEzNrtjUFsV0D2k").download(self.public_key_path, "public.key")
             public_key = RSA.importKey(open("public.key", 'r').read())
             try:
                 if self.signature.rsa_verify(public_key,
@@ -102,8 +115,10 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
                 msg.exec_()
             finally:
                 input_file.close()
+                remove("public.key")
 
-    def save_file(self):
+    # SAVES SIGNATURE AS FILE
+    def export_signature_as_file(self):
         if not self.signature_output.text():
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Warning)
@@ -122,7 +137,8 @@ class Application(QtWidgets.QMainWindow, Ui_MainWindow):
             msg.setWindowTitle("Done")
             msg.exec_()
 
-    def import_sign_from_file(self):
+    # GET SIGNATURE FROM FILE AND PASTE INTO A @signature_input FIELD
+    def import_signature_from_file(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "")[0]
         if file_name:
             self.signature_input.clear()

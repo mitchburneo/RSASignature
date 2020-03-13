@@ -13,6 +13,7 @@ class RSASignature(object):
         public_key = private_key.publickey()
         return private_key.exportKey('PEM'), public_key.exportKey('PEM')
 
+    # CREATES RSA SIGNATURE, RETURNS A BYTES OBJECT
     @staticmethod
     def rsa_sign(data):
         private_key = RSA.importKey(open("private.key", 'r').read())
@@ -21,6 +22,7 @@ class RSASignature(object):
         signer = PKCS1_v1_5.new(private_key)
         return b64encode(signer.sign(digest))
 
+    # VERIFIES RSA SIGNATURE, RETURNS TRUE OR FALSE
     @staticmethod
     def rsa_verify(public_key, data, sign):
         sign = b64decode(sign)
